@@ -1,0 +1,27 @@
+# === Backend (Python) ===
+# Ignore virtual environment
+backend/venv/
+
+# Ignore Python cache and compiled files
+**/__pycache__/
+**/*.py[cod]
+
+# Ignore environment variable files if used
+.env
+.env.*
+
+# === Frontend (Node.js) ===
+# Ignore node_modules
+frontend/node_modules/
+
+# Ignore build/dist artifacts if any
+frontend/dist/
+frontend/build/
+
+# === Common files ===
+# OS or editor generated
+.DS_Store
+*.log
+
+# Redis dump files (like dump.rdb)
+*.rdb  
