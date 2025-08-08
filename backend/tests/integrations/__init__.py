@@ -1,0 +1,1 @@
+# Allows integrations tests to be imported as a module

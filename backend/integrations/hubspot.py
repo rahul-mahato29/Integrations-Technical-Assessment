@@ -92,7 +92,10 @@ async def oauth2callback_hubspot(request: Request):
         raise HTTPException(status_code=400, detail="Token exchange failed.")
 
     # Store tokens in Redis for temporary use
-    await add_key_value_redis(f'hubspot_credentials:{org_id}:{user_id}', json.dumps(response.json()), expire=600)
+    token_data = response.json()
+    if asyncio.iscoroutine(token_data):
+        token_data = await token_data
+    await add_key_value_redis(f'hubspot_credentials:{org_id}:{user_id}', json.dumps(token_data), expire=600)
 
     # Close the OAuth popup window on success
     close_window_script = """
