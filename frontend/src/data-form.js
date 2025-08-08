@@ -31,13 +31,24 @@ export const DataForm = ({ integrationType, credentials }) => {
     return (
         <Box display='flex' justifyContent='center' alignItems='center' flexDirection='column' width='100%'>
             <Box display='flex' flexDirection='column' width='100%'>
-                <TextField
-                    label="Loaded Data"
-                    value={loadedData || ''}
-                    sx={{mt: 2}}
-                    InputLabelProps={{ shrink: true }}
-                    disabled
-                />
+                {loadedData && (
+                  <Box
+                    sx={{
+                      mt: 2,
+                      width: '100%',
+                      bgcolor: '#f5f5f5',
+                      p: 2,
+                      borderRadius: 1,
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      maxHeight: 300,
+                      overflowY: 'auto'
+                    }}
+                  >
+                    {JSON.stringify(loadedData, null, 2)}
+                  </Box>
+                )}
                 <Button
                     onClick={handleLoad}
                     sx={{mt: 2}}
