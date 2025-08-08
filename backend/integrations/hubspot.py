@@ -7,9 +7,12 @@ import asyncio
 import httpx
 import urllib.parse
 import os
+import requests
 from dotenv import load_dotenv
 from fastapi import Request, HTTPException
 from fastapi.responses import HTMLResponse
+from datetime import datetime
+from integrations.integration_item import IntegrationItem
 
 from redis_client import add_key_value_redis, get_value_redis, delete_key_redis
 
@@ -109,10 +112,64 @@ async def get_hubspot_credentials(user_id, org_id):
     await delete_key_redis(f'hubspot_credentials:{org_id}:{user_id}')
     return json.loads(credentials)
 
-async def create_integration_item_metadata_object(response_json):
-    # TODO
-    pass
 
-async def get_items_hubspot(credentials):
-    # TODO
-    pass
+async def create_integration_item_metadata_object(response_json):
+    # Convert HubSpot contact JSON into IntegrationItem
+    properties = response_json.get('properties', {})
+
+    # Extract name (HubSpot usually stores firstname/lastname separately)
+    name = f"{properties.get('firstname', '')} {properties.get('lastname', '')}".strip()
+    if not name:
+        name = properties.get('email', 'Unnamed Contact')
+
+    # Helper to parse HubSpot dates
+    def parse_hubspot_date(date_str):
+        if not date_str:
+            return None
+        try:
+            # If it's all digits → treat as milliseconds timestamp
+            if str(date_str).isdigit():
+                return datetime.fromtimestamp(int(date_str) / 1000)
+            # Else parse as ISO format (replace Z with UTC offset)
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    creation_time = parse_hubspot_date(properties.get('createdate'))
+    last_modified_time = parse_hubspot_date(properties.get('lastmodifieddate'))
+
+    return IntegrationItem(
+        id=response_json.get('id'),
+        type="contact",
+        name=name,
+        creation_time=creation_time,
+        last_modified_time=last_modified_time,
+        url=f"https://app.hubspot.com/contacts/{response_json.get('id')}",
+    )
+
+async def get_items_hubspot(credentials) -> list[IntegrationItem]:
+    # Fetch HubSpot contacts and return as list of IntegrationItem
+    credentials = json.loads(credentials)
+    access_token = credentials.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="No access token found.")
+
+    url = "https://api.hubapi.com/crm/v3/objects/contacts"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"limit": 10}  # limit for testing
+
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Failed to fetch HubSpot items.")
+
+    results = response.json().get("results", [])
+    list_of_integration_item_metadata = []
+
+    for contact in results:
+        item = await create_integration_item_metadata_object(contact)
+        list_of_integration_item_metadata.append(item)
+
+    # print("Fetched HubSpot Integration Items:", list_of_integration_item_metadata)
+    print("Fetched HubSpot Integration Items:")
+    print(json.dumps([item.__dict__ for item in list_of_integration_item_metadata], indent=2, default=str))
+    return list_of_integration_item_metadata
