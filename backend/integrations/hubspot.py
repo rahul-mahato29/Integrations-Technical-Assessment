@@ -113,8 +113,9 @@ async def get_hubspot_credentials(user_id, org_id):
     return json.loads(credentials)
 
 
+ # Convert HubSpot contact JSON into IntegrationItem
 async def create_integration_item_metadata_object(response_json):
-    # Convert HubSpot contact JSON into IntegrationItem
+   
     properties = response_json.get('properties', {})
 
     # Extract name (HubSpot usually stores firstname/lastname separately)
@@ -147,8 +148,9 @@ async def create_integration_item_metadata_object(response_json):
         url=f"https://app.hubspot.com/contacts/{response_json.get('id')}",
     )
 
+# Fetch HubSpot contacts and return as list of IntegrationItem
 async def get_items_hubspot(credentials) -> list[IntegrationItem]:
-    # Fetch HubSpot contacts and return as list of IntegrationItem
+    
     credentials = json.loads(credentials)
     access_token = credentials.get("access_token")
     if not access_token:
